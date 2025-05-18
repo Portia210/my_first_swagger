@@ -1,10 +1,46 @@
-from flask import jsonify, current_app
+from flask import jsonify, current_app, request
 import connexion
-from swagger_server.models.new_task import NewTask  
+import six
+
+from swagger_server.models.inline_response200 import InlineResponse200  # noqa: E501
+from swagger_server.models.login_body import LoginBody  # noqa: E501
+from swagger_server.models.new_task import NewTask  # noqa: E501
+from swagger_server.models.task import Task  # noqa: E501
+from swagger_server import util
+import jwt
+import datetime
+from functools import wraps
 
 
+def generate_token(username, secret_key):
+    return jwt.encode(
+        {
+            'username': username,
+            'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30)
+        },
+        secret_key,
+        algorithm="HS256"
+    )
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"message": "Token is missing!"}), 401
 
+        try:
+            token = token.split(" ")[1] if "Bearer" in token else token
+            jwt.decode(token, current_app.config["FLASK_SECRET"], algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "Token has expired!"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "Invalid token!"}), 401
+
+        return f(*args, **kwargs)
+    return decorated
+
+@token_required
 def get_task_by_id(task_id):  # noqa: E501
     """Get a specific task
 
@@ -21,6 +57,7 @@ def get_task_by_id(task_id):  # noqa: E501
         return jsonify({"error": str(e)}), 404
 
 
+
 def get_tasks():  # noqa: E501
     """Get all tasks
 
@@ -32,6 +69,21 @@ def get_tasks():  # noqa: E501
     return jsonify(current_app.config["TASK_MANAGER"].get_all_tasks())
 
 
+def login_post(body):  # noqa: E501
+    """Login to get JWT token
+
+     # noqa: E501
+
+    :param body: 
+    :type body: dict | bytes
+
+    :rtype: InlineResponse200
+    """
+    if connexion.request.is_json:
+        body = LoginBody.from_dict(connexion.request.get_json())  # noqa: E501
+    return generate_token(body.username, current_app.config["FLASK_SECRET"])
+
+@token_required
 def tasks_post(body):  # noqa: E501
     """Create a new task
 
@@ -51,7 +103,7 @@ def tasks_post(body):  # noqa: E501
     except Exception as e:
         return jsonify({"error": str(e)}), 404
 
-
+@token_required
 def tasks_task_id_complete_get(task_id):  # noqa: E501
     """Mark a task as complete
 
@@ -69,7 +121,7 @@ def tasks_task_id_complete_get(task_id):  # noqa: E501
     except KeyError as e:
         return jsonify({"error": str(e)}), 404
 
-
+@token_required
 def tasks_task_id_delete(task_id):  # noqa: E501
     """Delete a task
 
@@ -87,7 +139,7 @@ def tasks_task_id_delete(task_id):  # noqa: E501
     except KeyError as e:
         return jsonify({"error": str(e)}), 404
 
-
+@token_required
 def tasks_task_id_put(body, task_id):  # noqa: E501
     """Update a task
 

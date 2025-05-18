@@ -5,6 +5,8 @@ from __future__ import absolute_import
 from flask import json
 from six import BytesIO
 
+from swagger_server.models.inline_response200 import InlineResponse200  # noqa: E501
+from swagger_server.models.login_body import LoginBody  # noqa: E501
 from swagger_server.models.new_task import NewTask  # noqa: E501
 from swagger_server.models.task import Task  # noqa: E501
 from swagger_server.test import BaseTestCase
@@ -32,6 +34,20 @@ class TestDefaultController(BaseTestCase):
         response = self.client.open(
             '/tasks',
             method='GET')
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_login_post(self):
+        """Test case for login_post
+
+        Login to get JWT token
+        """
+        body = LoginBody()
+        response = self.client.open(
+            '/login',
+            method='POST',
+            data=json.dumps(body),
+            content_type='application/json')
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
