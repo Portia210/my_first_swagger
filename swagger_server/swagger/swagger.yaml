@@ -1,0 +1,168 @@
+openapi: 3.0.0
+info:
+  title: Task Management API
+  description: API for managing tasks
+  version: 1.0.0
+servers:
+- url: http://localhost:5050
+  description: API Development
+paths:
+  /tasks:
+    get:
+      summary: Get all tasks
+      description: Retrieve a list of all tasks
+      operationId: get_tasks
+      responses:
+        "200":
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/Task"
+                x-content-type: application/json
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+    post:
+      summary: Create a new task
+      description: Add a new task with title and description
+      operationId: tasks_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTask"
+        required: true
+      responses:
+        "201":
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Bad Request
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /tasks/{task_id}:
+    get:
+      summary: Get a specific task
+      description: Retrieve a specific task by its ID
+      operationId: get_task_by_id
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: A task object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+    put:
+      summary: Update a task
+      description: Update a specific task by ID
+      operationId: tasks_task_id_put
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTask"
+        required: true
+      responses:
+        "200":
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Bad Request
+        "404":
+          description: Task not found
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+    delete:
+      summary: Delete a task
+      description: Delete a specific task by ID
+      operationId: tasks_task_id_delete
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Task deleted successfully
+        "404":
+          description: Task not found
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /tasks/{task_id}/complete:
+    get:
+      summary: Mark a task as complete
+      description: Mark a specific task as completed
+      operationId: tasks_task_id_complete_get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Task marked as completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        completed:
+          type: boolean
+      example:
+        description: This is the content of the task
+        id: 0
+        completed: true
+        title: This is the title of the task
+    NewTask:
+      required:
+      - description
+      - title
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+
